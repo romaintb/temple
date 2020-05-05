@@ -150,4 +150,32 @@ defmodule TempleTest do
 
     assert result == ~s{<%= unless(true == false) do %><div class="hi"></div><% end %>}
   end
+
+  test "renders multiline anonymous functions" do
+    result =
+      temple do
+        form_for @changeset, Routes.user_path(@conn, :create), fn f ->
+          "Name: "
+          text_input f, :name
+        end
+      end
+
+    assert result == ~s{<%= form_for(@changeset, Routes.user_path(@conn, :create), fn f -> %>Name: <%= text_input f, :name %><% end %>}
+  end
+  test "hell this " do
+    IO.inspects "poop", label: "The poop"
+    Io.inspects "poop", label: "The pooop"
+  end
+  ast = {:form_for, [], [
+   {:@, [line: 157], [{:changeset, [line: 157], nil}]},
+   {{:., [line: 157], [{:__aliases__, [line: 157], [:Routes]}, :user_path]},
+    [line: 157], [{:@, [line: 157], [{:conn, [line: 157], nil}]}, :create]},
+   {:fn, [line: 157],
+    [
+      {:->, [line: 157],
+       [
+         [{:f, [line: 157], nil}]
+       ]}
+    ]}
+ ]}
 end

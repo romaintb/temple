@@ -64,14 +64,17 @@ defmodule Temple do
   def split_args(nil), do: {[], []}
 
   def split_args(args) do
-    args
-    |> Enum.split_with(fn
-      arg when is_list(arg) ->
-        Keyword.has_key?(arg, :do) || Keyword.has_key?(arg, :else)
+    {do_and_else, args} =
+      args
+      |> Enum.split_with(fn
+        arg when is_list(arg) ->
+          Keyword.has_key?(arg, :do) || Keyword.has_key?(arg, :else)
 
-      _ ->
-        false
-    end)
+        _ ->
+          false
+      end)
+
+    {List.flatten(do_and_else), args}
   end
 
   def traverse(buffer, {:__block__, _meta, block}) do
@@ -79,23 +82,17 @@ defmodule Temple do
   end
 
   def traverse(buffer, {name, meta, args} = macro) do
-    # macro
-    # |> IO.inspect(label: :macro, pretty: true, limit: :infinity, printable_limit: :infinity)
-
     {do_and_else, args} =
       args
       |> split_args()
 
-    do_and_else = do_and_else |> List.flatten()
+    includes_fn? = args |> Enum.any?(fn x -> match?({:fn, _, _}, x) end)
 
-    # name
-    # |> IO.inspect(label: :name, pretty: true, limit: :infinity, printable_limit: :infinity)
+      defmodule Stuff do
+      use Thing
 
-    # do_and_else
-    # |> IO.inspect(label: :do_and_else, pretty: true, limit: :infinity, printable_limit: :infinity)
-
-    # args
-    # |> IO.inspect(label: :args, pretty: true, limit: :infinity, printable_limit: :infinity)
+      aksjdfk
+      end
 
     case name do
       name when name in @nonvoid_elements ->
@@ -105,6 +102,10 @@ defmodule Temple do
 
       name when name in @void_elements ->
         Buffer.put(buffer, "<#{name}#{compile_attrs(args)}>")
+
+      name when includes_fn? ->
+        func =
+          "<%="
 
       name when name in [:for, :if, :unless] ->
         Buffer.put(buffer, "<%= " <> Macro.to_string({name, meta, args}) <> " do %>")
